@@ -16,11 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import json
 from django.db import models
-from storageadmin.models import NetworkConnection
-from smart_manager.models import Service
-
+from storageadmin.models import NetworkInterface
 
 class Appliance(models.Model):
     """uuid is hostid-uid"""
@@ -34,28 +31,24 @@ class Appliance(models.Model):
 
     @property
     def ipaddr(self, *args, **kwargs):
-        #@todo this implementation is hacky. Once issue #1271 is fixed, we can simplify this.
         if (not self.current_appliance):
             return self.ip
         try:
-            ip = self.ip
+            no = NetworkInterface.objects.get(itype='management')
+            return no.ipaddr
+        except NetworkInterface.DoesNotExist:
             try:
-                so = Service.objects.get(name='rockstor')
-                if (so.config is not None):
-                    try:
-                        config = json.loads(so.config)
-                        nco = NetworkConnection.objects.get(name=config['network_interface'])
-                        if (nco.ipaddr is not None):
-                            return nco.ipaddr
-                    except:
-                        pass
-            except Service.DoesNotExist:
-                pass
-            return ip
-        except Exception, e:
-            msg = ('Failed to grab the management IP of the appliance '
-                   'due to an error: %s' % e.__str__())
-            raise Exception(e)
+                ip = self.ip
+                for ni in NetworkInterface.objects.all():
+                    if (ni.ipaddr is not None):
+                        if (ni.ipaddr == self.ip):
+                            return self.ip
+                        ip = ni.ipaddr
+                return ip
+            except Exception, e:
+                msg = ('Failed to grab the management IP of the appliance '
+                       'due to an error: %s' % e.__str__())
+                raise Exception(e)
 
     class Meta:
         app_label = 'storageadmin'

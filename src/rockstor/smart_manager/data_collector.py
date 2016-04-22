@@ -135,10 +135,10 @@ class NetworkWidgetNamespace(BaseNamespace, BroadcastMixin):
         self.disconnect()
 
     def network_stats(self):
-        from storageadmin.models import NetworkDevice
+        from storageadmin.models import NetworkInterface
 
         def retrieve_network_stats(prev_stats):
-            interfaces = [i.name for i in NetworkDevice.objects.all()]
+            interfaces = [i.name for i in NetworkInterface.objects.all()]
             interval = 1
             cur_stats = {}
             with open('/proc/net/dev') as sfo:

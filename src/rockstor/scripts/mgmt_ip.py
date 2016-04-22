@@ -16,11 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from django.conf.urls import patterns, url
-from storageadmin.views import NetworkListView, NetworkDetailView
+from storageadmin.models import NetworkInterface
 
-urlpatterns = patterns(
-    '',
-    url(r'^$', NetworkListView.as_view()),
-    url(r'^/(?P<iname>.*)$', NetworkDetailView.as_view(),)
-    )
+def mgmt_ip():
+    mgmt_ifs = NetworkInterface.objects.filter(itype='management')
+    if (len(mgmt_ifs) > 0):
+        return mgmt_ifs[0].ipaddr
+    return ''
+
+def main():
+    return mgmt_ip()

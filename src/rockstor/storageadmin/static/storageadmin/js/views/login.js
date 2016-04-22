@@ -30,10 +30,24 @@ InitView = RockstorLayoutView.extend({
 	this.constructor.__super__.initialize.apply(this, arguments);
     },
 
+    setIp: function() {
+	var mgmtIface = this.networkInterfaces.find(function(iface) {
+	    return iface.get('itype') == 'management';
+	});
+	if (_.isUndefined(mgmtIface)) {
+	    mgmtIface = this.networkInterfaces.find(function(iface) {
+		if (iface.get('ipaddr')) {
+		    return iface;
+		}
+	    });
+	}
+	RockStorGlobals.ip = mgmtIface.get("ipaddr");
+    },
+
     scanNetwork: function() {
 	var _this = this;
 	$.ajax({
-	    url: "/api/network/refresh",
+	    url: "/api/network",
 	    type: "POST",
 	    dataType: "json",
 	    success: function(data, status, xhr) {
@@ -44,6 +58,7 @@ InitView = RockstorLayoutView.extend({
 
     saveAppliance: function() {
 	var _this = this;
+	this.setIp();
 	// create current appliance if not created already
 	if (this.appliances.length > 0) {
 	    var current_appliance = this.appliances.find(function(appliance) {
@@ -105,7 +120,7 @@ LoginView = InitView.extend({
     initialize: function() {
 	this.login_template = window.JST.home_login_template;
 	this.user_create_template = window.JST.home_user_create_template;
-	this.networkInterfaces = new NetworkConnectionCollection();
+	this.networkInterfaces = new NetworkInterfaceCollection();
 	this.networkInterfaces.pageSize = RockStorGlobals.maxPageSize;
 	this.networkInterfaces.on("reset", this.saveAppliance, this);
 	this.appliances = new ApplianceCollection();
@@ -191,110 +206,5 @@ LoginView = InitView.extend({
 	    }
 	});
     },
-
-});
-
-
-SetupView = InitView.extend({
-    tagName: 'div',
-
-    events: {
-	'click #next-page': 'nextPage',
-	'click #prev-page': 'prevPage'
-    },
-
-    initialize: function() {
-	this.constructor.__super__.initialize.apply(this, arguments);
-	this.template = window.JST.setup_setup;
-	this.pages = [null, SetupDisksView, SetupSystemView];
-	this.sidebars = [null, "disks"];
-	this.current_page = 1;
-	this.current_view = null;
-	this.appliances = new ApplianceCollection();
-	this.appliances.pageSize = RockStorGlobals.maxPageSize;
-	this.dependencies.push(this.appliances);
-
-	//next three lines are supposed to refresh connection state?
-	this.networkInterfaces = new NetworkConnectionCollection();
-	this.networkInterfaces.pageSize = RockStorGlobals.maxPageSize;
-	this.networkInterfaces.on("reset", this.saveAppliance, this);
-
-    },
-
-    render: function() {
-	$(this.el).html(this.template());
-	var _this = this;
-	this.fetch(this.renderCurrentPage, this);
-	return this;
-    },
-
-    renderCurrentPage: function() {
-	opts = {
-	    appliances: this.appliances
-	};
-	this.renderSidebar("setup", this.sidebars[this.current_page]);
-	this.current_view = new this.pages[this.current_page](opts);
-	this.$('#current-page-inner').html(this.current_view.render().el);
-
-    },
-
-    nextPage: function() {
-	if (this.current_page < this.pages.length-1) {
-	    this.current_page = this.current_page + 1;
-	    this.renderCurrentPage();
-	    this.modifyButtonText();
-	    this.setCurrentStepTitle(this.current_page, this.current_page-1);
-	} else {
-	    this.save();
-	}
-    },
-
-    prevPage: function() {
-	if (this.current_page > 1) {
-	    this.current_page = this.current_page - 1;
-	    this.renderCurrentPage();
-	    this.modifyButtonText();
-	    this.setCurrentStepTitle(this.current_page, this.current_page+1);
-	}
-    },
-
-    modifyButtonText: function() {
-	if (this.lastPage()) {
-	    this.$('#next-page').html('Finish');
-	} else {
-	    this.$('#next-page').html('Next');
-	}
-    },
-
-    lastPage: function() {
-	return (this.current_page == (this.pages.length - 1));
-    },
-
-    save: function() {
-	// hostname is the last page, so check if the form is filled
-	this.current_view.$('#set-hostname-form').submit();
-	if (!_.isUndefined(RockStorGlobals.hostname) &&
-            !_.isNull(RockStorGlobals.hostname)) {
-	    var button = this.$('#next-page');
-	    if (buttonDisabled(button)) return false;
-	    disableButton(button);
-	    this.scanNetwork();
-	}
-    },
-
-    setCurrentStepTitle: function(new_step, old_step) {
-	old_step_str = old_step + '';
-	old_sel_str = '#setup-titles li[data-step="' + old_step_str + '"]';
-	this.$(old_sel_str).removeClass('current-step');
-	new_step_str = new_step + '';
-	new_sel_str = '#setup-titles li[data-step="' + new_step_str + '"]';
-	this.$(new_sel_str).addClass('current-step');
-    },
-
-    renderSidebar: function(name, selected) {
-	var sidenavTemplate = window.JST["common_sidenav_" + name];
-	$("#sidebar-inner").html(sidenavTemplate({selected: selected}));
-    }
-
 
 });

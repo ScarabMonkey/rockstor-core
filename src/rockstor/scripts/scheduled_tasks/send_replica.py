@@ -21,6 +21,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import sys
 from django.conf import settings
 import zmq
+from storageadmin.models import NetworkInterface
 import logging
 logger = logging.getLogger(__name__)
 import time

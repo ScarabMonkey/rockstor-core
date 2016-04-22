@@ -74,9 +74,8 @@ var AppRouter = Backbone.Router.extend({
 	"add-samba-export": "addSambaExport",
 	"samba/edit/:sambaShareId": "editSambaExport",
 	"nfs-exports/edit/:nfsExportGroupId": "editNFSExport",
-	"network/add": "addNetworkConnection",
-	"network/edit/:connectionId": "editNetwork",
 	"network": "showNetworks",
+	"network/:name/edit": "editNetwork",
 	"scheduled-tasks": "showScheduledTasks",
 	"scheduled-tasks/:taskId/log": "showTasks",
 	"add-scheduled-task": "addScheduledTask",
@@ -450,23 +449,15 @@ var AppRouter = Backbone.Router.extend({
     showNetworks: function() {
 	this.renderSidebar("system", "network");
 	this.cleanup();
-	this.currentLayout = new NetworkView();
+	this.currentLayout = new NetworksView();
 	$('#maincontent').empty();
 	$('#maincontent').append(this.currentLayout.render().el);
     },
 
-    editNetwork: function(connectionId) {
+    editNetwork: function(name) {
 	this.renderSidebar("system", "network");
 	this.cleanup();
-	this.currentLayout = new NetworkConnectionView({connectionId: connectionId});
-	$('#maincontent').empty();
-	$('#maincontent').append(this.currentLayout.render().el);
-    },
-
-    addNetworkConnection: function() {
-	this.renderSidebar("system", "network");
-	this.cleanup();
-	this.currentLayout = new NetworkConnectionView();
+	this.currentLayout = new EditNetworkView({name: name});
 	$('#maincontent').empty();
 	$('#maincontent').append(this.currentLayout.render().el);
     },
